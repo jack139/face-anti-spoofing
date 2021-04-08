@@ -1,3 +1,11 @@
+# coding: utf-8
+
+import sys
+
+if len(sys.argv)<2:
+    print("usage: python3 %s <image_path>" % sys.argv[0])
+    sys.exit(1)
+
 import warnings
 warnings.filterwarnings("ignore")
 import numpy as np 
@@ -9,6 +17,7 @@ from keras.preprocessing.image import img_to_array
 from rPPG.rPPG_Extracter import *
 from rPPG.rPPG_lukas_Extracter import *
 #########################
+import face_recognition
 
 
 # load YAML and create model
@@ -81,53 +90,56 @@ def make_pred(li):
 cascPath = 'rPPG/util/haarcascade_frontalface_default.xml'
 faceCascade = cv2.CascadeClassifier(cascPath)
 
-
-video_capture = cv2.VideoCapture(0)
-
 collected_results = []
 counter = 0          # count collected buffers
 frames_buffer = 5    # how many frames to collect to check for
 accepted_falses = 1  # how many should have zeros to say it is real
-while True:
-    # Capture frame-by-frame
-    ret, frame = video_capture.read()
-    if ret:
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = faceCascade.detectMultiScale(
-            gray,
-            scaleFactor=1.1,
-            minNeighbors=5
-        )
-        
-        # Draw a rectangle around the faces
-        for (x, y, w, h) in faces:
-            sub_img=frame[y:y+h,x:x+w]
-            rppg_s = get_rppg_pred(sub_img)
-            rppg_s = rppg_s.T
 
-            pred = make_pred([sub_img,rppg_s])
+# Capture frame-by-frame
+frame = cv2.imread(sys.argv[1], cv2.IMREAD_COLOR)
 
-            collected_results.append(np.argmax(pred))
-            counter += 1
+gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+#faces = faceCascade.detectMultiScale(
+#    gray,
+#    scaleFactor=1.1,
+#    minNeighbors=5
+#)
 
-            cv2.putText(frame,"Real: "+str(pred[0][0]), (50,30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), lineType=cv2.LINE_AA)
-            cv2.putText(frame,"Fake: "+str(pred[0][1]), (50,60), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), lineType=cv2.LINE_AA)
-            if len(collected_results) == frames_buffer:
-                print(sum(collected_results))
-                if sum(collected_results) <= accepted_falses:
-                    cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                else:
-                    cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 0, 255), 2)
-                collected_results.pop(0)
+faces = face_recognition.face_locations(gray)
 
+#print(faces)
 
+# Draw a rectangle around the faces
+#for (x, y, w, h) in faces:
+for (top, right, bottom, left) in faces:
+    x, y, w, h = left, top, right-left+1, bottom-top+1
+    sub_img=frame[y:y+h,x:x+w]
+    cv2.imwrite('img_%d_%d.jpg'%(x,y),sub_img)
+    rppg_s = get_rppg_pred(sub_img)
+    rppg_s = rppg_s.T
 
-        # Display the resulting frame
-        cv2.imshow('To quit press q', frame)
+    pred = make_pred([sub_img,rppg_s])
 
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+    collected_results.append(np.argmax(pred))
+    counter += 1
+
+    print("Real: "+str(pred[0][0]))
+    print("Fake: "+str(pred[0][1]))
+    if len(collected_results) == frames_buffer:
+        #print(sum(collected_results))
+        if sum(collected_results) <= accepted_falses:
+            cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+        else:
+            cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 0, 255), 2)
+        collected_results.pop(0)
+
+    cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
+
+# Display the resulting frame
+cv2.imwrite('img.jpg',frame)
+#cv2.imshow('', frame)
+#cv2.waitKey(0)
+
 
 # When everything is done, release the capture
-video_capture.release()
 cv2.destroyAllWindows()

@@ -1,6 +1,6 @@
 import rPPG.csk
 import numpy as np
-from scipy.misc import imread, imsave
+#from scipy.misc import imread, imsave
 import cv2 # (Optional) OpenCV for drawing bounding boxes
 from rPPG.rPPG_preprocessing import *
 from rPPG.csk import *
