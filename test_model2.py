@@ -9,6 +9,7 @@ from keras.preprocessing.image import img_to_array
 from rPPG.rPPG_Extracter import *
 from rPPG.rPPG_lukas_Extracter import *
 #########################
+import face_recognition
 
 
 # load YAML and create model
@@ -93,14 +94,17 @@ while True:
     ret, frame = video_capture.read()
     if ret:
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = faceCascade.detectMultiScale(
-            gray,
-            scaleFactor=1.1,
-            minNeighbors=5
-        )
+        #faces = faceCascade.detectMultiScale(
+        #    gray,
+        #    scaleFactor=1.1,
+        #    minNeighbors=5
+        #)
+        faces = face_recognition.face_locations(gray)
         
         # Draw a rectangle around the faces
-        for (x, y, w, h) in faces:
+        #for (x, y, w, h) in faces:
+        for (top, right, bottom, left) in faces:
+            x, y, w, h = left, top, right-left+1, bottom-top+1
             sub_img=frame[y:y+h,x:x+w]
             rppg_s = get_rppg_pred(sub_img)
             rppg_s = rppg_s.T
