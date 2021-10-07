@@ -30,14 +30,14 @@ loaded_model_yaml = yaml_file.read()
 yaml_file.close()
 model = model_from_yaml(loaded_model_yaml)
 # load weights into new model
-#model.load_weights("trained_model/RGB_rPPG_merge_softmax_.h5")
-model.load_weights("batch_128_epochs_5_steps_100_0.h5")
+model.load_weights("trained_model/RGB_rPPG_merge_softmax_.h5")
+#model.load_weights("batch_128_epochs_5_steps_100_0.h5")
 print("[INFO] Model is loaded from disk")
 
 
 dim = (128,128)
 def get_rppg_pred(frame):
-    use_classifier = False  # Toggles skin classifier
+    use_classifier = True  # Toggles skin classifier
     sub_roi = []           # If instead of skin classifier, forhead estimation should be used set to [.35,.65,.05,.15]
 
     rPPG_extracter = rPPG_Extracter()

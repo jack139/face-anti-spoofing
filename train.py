@@ -17,7 +17,6 @@ from keras.preprocessing.image import img_to_array
 from rPPG2.rPPG_Extracter import *
 
 
-input_size = (128,128,3)
 batch_size = 128
 steps_per_epoch = 100
 epochs = 5
@@ -29,7 +28,7 @@ val_dir = 'data/dataset/train'
 ###### rPPG 
 dim = (128,128)
 def get_rppg_pred(frame):
-    use_classifier = False  # Toggles skin classifier
+    use_classifier = True  # Toggles skin classifier
     sub_roi = []           # If instead of skin classifier, forhead estimation should be used set to [.35,.65,.05,.15]
 
     rPPG_extracter = rPPG_Extracter()
@@ -50,6 +49,8 @@ def data_generator(data_path, batch_size):
     for i in os.listdir(os.path.join(data_path, '1')):
         file_list.append((i, '1'))
     random.shuffle(file_list)
+
+    print(data_path, ": ", len(file_list), "\tbatch: ", batch_size)
 
     while True:
         for n in range(len(file_list)//batch_size):
@@ -101,17 +102,16 @@ model = model_from_yaml(loaded_model_yaml)
 #print("[INFO] Model is loaded from disk")
 
 # compile the model (should be done *after* setting layers to non-trainable)
-#model.compile(optimizer=Adam(lr = learning_rate), loss='categorical_crossentropy', metrics = ['accuracy', 'categorical_crossentropy'])
-model.compile(optimizer=SGD(lr=learning_rate, momentum=0.9), loss='categorical_crossentropy', metrics = ['accuracy'])
-
+model.compile(optimizer=Adam(lr = learning_rate), loss='categorical_crossentropy', metrics = ['accuracy'])
 model.summary()
+
 
 # train the model on the new data for a few epochs
 model.fit(train_generator, 
     steps_per_epoch=steps_per_epoch,
     epochs=epochs,
     validation_data=val_generator,
-    validation_steps=1000
+    validation_steps=3000
 )
 
 model.save('batch_%d_epochs_%d_steps_%d_0.h5'%(batch_size, epochs, steps_per_epoch))

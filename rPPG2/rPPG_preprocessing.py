@@ -15,6 +15,7 @@ def apply_skin_classifier(frame):
     skinMask = cv2.dilate(skinMask, kernel, iterations = 2)
     skinMask = cv2.GaussianBlur(skinMask, (3, 3), 0)
     num_skin_pixels = np.sum(np.max(skinMask,1))
+    num_skin_pixels = 1 if num_skin_pixels==0 else num_skin_pixels # 不能为0
     skin = cv2.bitwise_and(frame, frame, mask = skinMask)
     return skin,num_skin_pixels
 
