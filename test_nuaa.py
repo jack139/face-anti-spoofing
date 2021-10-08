@@ -23,6 +23,10 @@ def test(input_file):
 
     return T/N
 
+# rPPG on NUAA:
+# train 0.7244
+# val 0.5801
+
 if __name__ == '__main__':
     acc1 = test(os.path.join(nuaa_root, train_csv))
     print(acc1)
