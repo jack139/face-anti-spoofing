@@ -3,11 +3,6 @@ import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
 os.environ["CUDA_VISIBLE_DEVICES"] = "" #  只使用 CPU
 
-import sys
-
-if len(sys.argv)<2:
-    print("usage: python3 %s <image_path>" % sys.argv[0])
-    sys.exit(1)
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -19,7 +14,6 @@ from keras.models import model_from_yaml
 from keras.preprocessing.image import img_to_array
 #########################
 from rPPG2.rPPG_Extracter import *
-#from rPPG2.rPPG_lukas_Extracter import *
 #########################
 import face_recognition
 
@@ -59,58 +53,53 @@ def make_pred(li):
     return single_pred
 
 
-    
-cascPath = 'rPPG/util/haarcascade_frontalface_default.xml'
-faceCascade = cv2.CascadeClassifier(cascPath)
+def fas_check2(image_path):
+    # Capture frame-by-frame
+    frame = cv2.imread(image_path, cv2.IMREAD_COLOR)
 
-collected_results = []
-counter = 0          # count collected buffers
-frames_buffer = 5    # how many frames to collect to check for
-accepted_falses = 1  # how many should have zeros to say it is real
-
-# Capture frame-by-frame
-frame = cv2.imread(sys.argv[1], cv2.IMREAD_COLOR)
-
-gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-#faces = faceCascade.detectMultiScale(
-#    gray,
-#    scaleFactor=1.1,
-#    minNeighbors=5
-#)
-
-faces = face_recognition.face_locations(gray)
-
-#print(faces)
-
-# Draw a rectangle around the faces
-#for (x, y, w, h) in faces:
-for (top, right, bottom, left) in faces:
-    x, y, w, h = left, top, right-left+1, bottom-top+1
-    sub_img=frame[y:y+h,x:x+w]
-    #cv2.imwrite('img_%d_%d.jpg'%(x,y),sub_img)
-    rppg_s = get_rppg_pred(sub_img)
+    rppg_s = get_rppg_pred(frame)
+    #print('rPPG= ', rppg_s)
     rppg_s = rppg_s.T
 
-    pred = make_pred([sub_img,rppg_s])
+    pred = make_pred([frame,rppg_s])
 
-    collected_results.append(np.argmax(pred))
-    counter += 1
+    #print("Real: "+str(pred[0][0]))
+    #print("Fake: "+str(pred[0][1]))
 
-    print("Real: "+str(pred[0][0]))
-    print("Fake: "+str(pred[0][1]))
-    if len(collected_results) == frames_buffer:
-        #print(sum(collected_results))
-        if sum(collected_results) <= accepted_falses:
-            cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-        else:
-            cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 0, 255), 2)
-        collected_results.pop(0)
-
-    cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
-
-# Display the resulting frame
-#cv2.imwrite('img.jpg',frame)
+    return pred[0]
 
 
-# When everything is done, release the capture
-cv2.destroyAllWindows()
+def fas_check(image_path):
+    # Capture frame-by-frame
+    frame = cv2.imread(image_path, cv2.IMREAD_COLOR)
+
+    faces = face_recognition.face_locations(frame)
+
+    # Draw a rectangle around the faces
+    for (top, right, bottom, left) in faces:
+        x, y, w, h = left, top, right-left+1, bottom-top+1
+        sub_img=frame[y:y+h,x:x+w]
+        #cv2.imwrite('img_%d_%d.jpg'%(x,y),sub_img)
+        rppg_s = get_rppg_pred(sub_img)
+        #print('rPPG= ', rppg_s)
+        rppg_s = rppg_s.T
+
+        pred = make_pred([sub_img,rppg_s])
+
+        print("Real: "+str(pred[0][0]))
+        print("Fake: "+str(pred[0][1]))
+
+        cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
+
+    #cv2.imwrite('img.jpg',frame)
+
+
+if __name__ == '__main__':
+    import sys
+
+    if len(sys.argv)<2:
+        print("usage: python3 %s <image_path>" % sys.argv[0])
+        sys.exit(1)
+
+    fas_check(sys.argv[1])
+    
